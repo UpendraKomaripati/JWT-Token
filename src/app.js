@@ -1,37 +1,48 @@
-const express = require("express")
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const dotEnv=require("dotenv")
+
 const app = express();
 app.use(express.json());
+dotEnv.config();
 
-const user = [{
-    id: "1",
-    name: "Upendra",
-    password: "Upendra1218",
-    isAdmin: true
-},
-{
-    id: "2",
-    name: "Ramesh",
-    password: "Ramesh1218",
-    isAdmin: false
-}
-]
-app.use(express.json())
+const secretKey = process.env.mySecretKey;
 
-app.post("/app/login", async (req, res) => {
+const users = [
+    { id: "1", username: "Upendra", password: "Upendra1218", isAdmin: true },
+    { id: "2", username: "Ramesh", password: "Ramesh1218", isAdmin: false }
+];
 
-     const { name, password } = req.body
+app.post("/app/login", (req, res) => {
     try {
-        const person = await user.find((person) => {
-            return person.name === name && person.password === password
+        const { username, password } = req.body;
+
+        const person = users.find((person) => {
+            return person.username === username && person.password === password
+
         })
-        res.json(person)
-    } catch (error) {
-        console.log("code will be wrong", error)
-        res.status(400).json("user credintals not match",)
+        if (person) {
+            const accessToken = jwt.sign(
+                { id: person.id, isAdmin: person.isAdmin ,username:person.username},
+               "MyNameisUpendra"
+            );
+            return res.json({
+                username: person.username,
+                isAdmin: person.isAdmin,
+                password:person.password,
+                accessToken,
+            });
+        } else {
+            console.error("Invalid credentials");
+            return res.status(400).json({ message: "User credentials do not match" });
+        }
+    }
+    catch (error) {
+        console.log("error", error)
     }
 
-})
+});
 
 app.listen(1212, () => {
-    console.log('Server is started')
-})
+    console.log("Server is started");
+});
